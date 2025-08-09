@@ -9,6 +9,10 @@
   const overlay = document.getElementById('overlay');
   const finalScoreEl = document.getElementById('final-score');
   const restartBtn = document.getElementById('restart');
+  const celebrateEl = document.getElementById('celebrate');
+  const celebrateCanvas = document.getElementById('celebrate-canvas');
+  const celebrateCtx = celebrateCanvas ? celebrateCanvas.getContext('2d') : null;
+  let celebrateUnlockAt = 0; // ms (performance.now基準)。この時刻までは閉じられない
 
   // Logical world size in pixels (scaled to canvas size by CSS)
   const W = 360; // width
@@ -44,16 +48,16 @@
 
   // Fruit levels (cute pastel colors). Radii in pixels.
   const LEVELS = [
-    { name: 'Cherry',     radius: 20,  color: '#ff8aa8', score: 1 },
-    { name: 'Strawberry', radius: 25,  color: '#ff6f91', score: 3 },
-    { name: 'Grape',      radius: 30,  color: '#b085f5', score: 6 },
-    { name: 'Orange',     radius: 35,  color: '#ffb75e', score: 10 },
-    { name: 'Apple',      radius: 40,  color: '#ff8f6b', score: 15 },
-    { name: 'Pear',       radius: 45,  color: '#9be15d', score: 22 },
-    { name: 'Peach',      radius: 50,  color: '#ffcad4', score: 32 },
-    { name: 'Pineapple',  radius: 55, color: '#ffe873', score: 46 },
-    { name: 'Melon',      radius: 60, color: '#a0f0b7', score: 64 },
-    { name: 'Watermelon', radius: 70, color: '#7bd389', score: 88 },
+    { name: 'Cherry',     radius: 15,  color: '#ff8aa8', score: 1 },
+    { name: 'Strawberry', radius: 20,  color: '#ff6f91', score: 3 },
+    { name: 'Grape',      radius: 25,  color: '#b085f5', score: 6 },
+    { name: 'Orange',     radius: 30,  color: '#ffb75e', score: 10 },
+    { name: 'Apple',      radius: 35,  color: '#ff8f6b', score: 15 },
+    { name: 'Pear',       radius: 40,  color: '#9be15d', score: 22 },
+    { name: 'Peach',      radius: 45,  color: '#ffcad4', score: 32 },
+    { name: 'Pineapple',  radius: 50, color: '#ffe873', score: 46 },
+    { name: 'Melon',      radius: 55, color: '#a0f0b7', score: 64 },
+    { name: 'Watermelon', radius: 60, color: '#7bd389', score: 88 },
   ];
 
   let START_MAX_LEVEL = 4; // base spawn cap (may be further limited dynamically)
@@ -78,6 +82,7 @@
   bestEl.textContent = String(best);
   let gameOver = false;
   let overTimer = 0; // ms maintaining over-line state
+  let paused = false; // 演出中ポーズ
   let spawnX = W/2;
   let nextLevel = randNextLevel();
 
@@ -158,7 +163,7 @@
     if (accumulator > 0.5) accumulator = 0.5;
 
     while (accumulator >= FIXED_DT) {
-      step(FIXED_DT);
+      if (!paused) step(FIXED_DT);
       accumulator -= FIXED_DT;
     }
     draw();
@@ -255,6 +260,7 @@
     if (pairs.length){
       // map ids
       const byId = new Map(fruits.map(f=>[f.id,f]));
+      let openedCelebrate = false;
       for (const [ida,idb] of pairs){
         const a = byId.get(ida), b = byId.get(idb);
         if (!a || !b) continue;
@@ -273,6 +279,11 @@
         addScore(LEVELS[level].score);
         // haptic
         if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
+        // 最大レベルに到達したら演出（1回だけ）
+        if (!openedCelebrate && level >= MAX_LEVEL_ALLOWED) {
+          openedCelebrate = true;
+          openCelebrate(level);
+        }
       }
       // 合体直後に軽い分離パスでめり込みを解消
       resolveOverlaps(3);
@@ -598,6 +609,143 @@
   restartBtn.addEventListener('click', ()=>{
     resetGame();
   });
+
+  // 祝福演出（最大レベル）
+  function openCelebrate(level){
+    if (!celebrateEl || !celebrateCtx) return;
+    paused = true;
+    sizeCelebrateCanvas();
+    renderCelebrate(level);
+    celebrateEl.hidden = false;
+    celebrateUnlockAt = performance.now() + 5000; // 5秒ロック
+  }
+
+  function closeCelebrate(){
+    if (!celebrateEl) return;
+    celebrateEl.hidden = true;
+    paused = false;
+  }
+
+  if (celebrateEl){
+    celebrateEl.addEventListener('click', (e)=>{
+      if (performance.now() < celebrateUnlockAt) return; // ロック中
+      closeCelebrate();
+    });
+    window.addEventListener('resize', ()=>{
+      if (!celebrateEl.hidden) { sizeCelebrateCanvas(); renderCelebrate(MAX_LEVEL_ALLOWED); }
+    });
+  }
+
+  function renderCelebrate(level){
+    const ctx2 = celebrateCtx;
+    const W2 = celebrateCanvas.width, H2 = celebrateCanvas.height;
+    ctx2.clearRect(0,0,W2,H2);
+    // 背景の柔らかい円グラデ
+    const bgGrad = ctx2.createRadialGradient(W2/2, H2/2, H2*0.1, W2/2, H2/2, H2*0.5);
+    bgGrad.addColorStop(0, '#ffffff');
+    bgGrad.addColorStop(1, '#ffe7f0');
+    ctx2.fillStyle = bgGrad;
+    ctx2.fillRect(0,0,W2,H2);
+
+    // 画像 or フォールバックで描画（大きめ）
+    const S = Math.min(W2,H2);
+    const r = S*0.26; // 少し小さくして下部にテキスト領域を確保
+    const x = W2/2, y = H2/2;
+    const spr = bearSprites[level];
+    if (spr){
+      const { img, sx, sy, sw, sh } = spr;
+      const scale = Math.max((2*r)/sw, (2*r)/sh) * 1.02;
+      const dw = sw * scale, dh = sh * scale;
+      ctx2.drawImage(img, sx, sy, sw, sh, x - dw/2, y - dh/2, dw, dh);
+    } else {
+      // フォールバックのベア描画（簡易）
+      const base = '#c49364';
+      const earOuter = '#b07a4c';
+      const earInner = '#e8c9a6';
+      const muzzle = '#f2dfc7';
+      // ears
+      const earR = r*0.38, earDx = r*0.55, earDy = r*0.58;
+      for (const s of [-1,1]){
+        const ex = x + s*earDx, ey = y - earDy;
+        ctx2.beginPath(); ctx2.arc(ex,ey,earR,0,Math.PI*2); ctx2.fillStyle = earOuter; ctx2.fill();
+        ctx2.beginPath(); ctx2.arc(ex,ey,earR*0.6,0,Math.PI*2); ctx2.fillStyle = earInner; ctx2.fill();
+      }
+      // head
+      const grad = ctx2.createRadialGradient(x-r*0.4, y-r*0.6, r*0.3, x, y, r);
+      grad.addColorStop(0, lighten(base,.12)); grad.addColorStop(1, base);
+      ctx2.fillStyle = grad; ctx2.beginPath(); ctx2.arc(x,y,r,0,Math.PI*2); ctx2.fill();
+      // muzzle
+      ctx2.beginPath(); ctx2.ellipse(x, y + r*0.15, r*0.55, r*0.38, 0, 0, Math.PI*2); ctx2.fillStyle = muzzle; ctx2.fill();
+      // eyes
+      const eyeR = Math.max(2, r*0.09), eyeOffsetX = r*0.3, eyeOffsetY = r*0.05;
+      ctx2.fillStyle = '#2a2a2a'; ctx2.beginPath();
+      ctx2.arc(x-eyeOffsetX, y-eyeOffsetY, eyeR, 0, Math.PI*2);
+      ctx2.arc(x+eyeOffsetX, y-eyeOffsetY, eyeR, 0, Math.PI*2);
+      ctx2.fill();
+      // nose
+      ctx2.beginPath(); ctx2.arc(x, y + r*0.12, eyeR*0.9, 0, Math.PI*2); ctx2.fillStyle = '#2a2a2a'; ctx2.fill();
+      // mouth
+      ctx2.beginPath(); ctx2.lineWidth = Math.max(1.2, r*0.06); ctx2.strokeStyle = '#2a2a2a';
+      ctx2.moveTo(x, y + r*0.18);
+      ctx2.quadraticCurveTo(x, y + r*0.26, x - r*0.18, y + r*0.26);
+      ctx2.moveTo(x, y + r*0.18);
+      ctx2.quadraticCurveTo(x, y + r*0.26, x + r*0.18, y + r*0.26);
+      ctx2.stroke();
+    }
+
+    // メッセージ「作ってくれてありがとう〜」を画像とかぶらない下部に表示
+    const msg = '作ってくれてありがとう〜';
+    const fontSize = Math.max(18, Math.round(S * 0.06));
+    ctx2.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Arial, 'Noto Sans JP', sans-serif`;
+    ctx2.textBaseline = 'middle';
+    const tw = ctx2.measureText(msg).width;
+    const padX = Math.round(S * 0.04);
+    const padY = Math.round(S * 0.02);
+    const bw = Math.min(W2 * 0.9, tw + padX*2);
+    const bh = fontSize + padY*2;
+    const bottomMargin = Math.round(S * 0.08);
+    const bx = Math.round((W2 - bw) / 2);
+    const by = Math.max(y + r + padY, H2 - bottomMargin - bh);
+    // 背景ボックス（角丸）
+    ctx2.save();
+    const radius = Math.min(14, Math.round(bh * 0.3));
+    roundRectPath(ctx2, bx, by, bw, bh, radius);
+    ctx2.fillStyle = 'rgba(255,255,255,0.97)';
+    ctx2.fill();
+    // テキスト
+    ctx2.fillStyle = '#333';
+    ctx2.textAlign = 'center';
+    ctx2.fillText(msg, bx + bw/2, by + bh/2 + 1);
+    ctx2.restore();
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.lineTo(x+w-rr, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+rr);
+    ctx.lineTo(x+w, y+h-rr);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-rr, y+h);
+    ctx.lineTo(x+rr, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-rr);
+    ctx.lineTo(x, y+rr);
+    ctx.quadraticCurveTo(x, y, x+rr, y);
+  }
+
+  function sizeCelebrateCanvas(){
+    if (!celebrateCanvas) return;
+    const container = document.querySelector('.celebrate');
+    const targetBox = document.querySelector('.game-wrap') || document.body;
+    const cw = targetBox.clientWidth;
+    const ch = targetBox.clientHeight;
+    const cssSize = Math.max(180, Math.min(cw*0.92, ch*0.92, 480));
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    celebrateCanvas.style.width = cssSize + 'px';
+    celebrateCanvas.style.height = 'auto';
+    celebrateCanvas.width = Math.round(cssSize * dpr);
+    celebrateCanvas.height = celebrateCanvas.width; // 正方形
+  }
 
   function resetGame(){
     saveBest();
