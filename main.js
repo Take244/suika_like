@@ -12,7 +12,7 @@
 
   // Logical world size in pixels (scaled to canvas size by CSS)
   const W = 360; // width
-  const H = 560; // height (短く調整)
+  const H = 500; // height（さらに低く）
   canvas.width = W; canvas.height = H;
 
   // Visual theme: 'fruit' or 'bear' (bearは画像優先・なければ描画)
@@ -25,8 +25,8 @@
   const bearSprites = new Array(10).fill(null); // レベルごとのトリム済みスプライト情報
 
   // Safe area for spawning and top line
-  const TOP_LINE_Y = 78; // where the red line is drawn (Hに合わせて調整)
-  const SPAWN_Y = 35;    // y position to preview/spawn above line
+  const TOP_LINE_Y = 70; // where the red line is drawn（H比率で再調整）
+  const SPAWN_Y = 31;    // y position to preview/spawn above line
 
   // Physics params
   let GRAVITY = 2000;        // px/s^2
