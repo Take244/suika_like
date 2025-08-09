@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffe7f0" />
+    <title>Fruity Merge (Suika-like)</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="hud">
+        <div class="score">Score: <span id="score">0</span></div>
+        <div class="highscore">Best: <span id="best">0</span></div>
+        <div class="nextbox">Next</div>
+      </header>
+
+      <main class="game-wrap">
+        <canvas id="game" width="360" height="640"></canvas>
+        <div class="topline" id="topline"></div>
+        <div class="overlay" id="overlay" hidden>
+          <div class="panel">
+            <h1>Game Over</h1>
+            <p>Score: <span id="final-score">0</span></p>
+            <button id="restart">Restart</button>
+          </div>
+        </div>
+      </main>
+
+      <footer class="tips">ドラッグで位置、タップでドロップ</footer>
+    </div>
+
+    <script src="./main.js"></script>
+  </body>
+  </html>
+
