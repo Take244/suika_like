@@ -12,7 +12,7 @@
 
   // Logical world size in pixels (scaled to canvas size by CSS)
   const W = 360; // width
-  const H = 500; // height（さらに低く）
+  const H = 520; // height（少し高く）
   canvas.width = W; canvas.height = H;
 
   // Visual theme: 'fruit' or 'bear' (bearは画像優先・なければ描画)
@@ -25,8 +25,8 @@
   const bearSprites = new Array(10).fill(null); // レベルごとのトリム済みスプライト情報
 
   // Safe area for spawning and top line
-  const TOP_LINE_Y = 70; // where the red line is drawn（H比率で再調整）
-  const SPAWN_Y = 31;    // y position to preview/spawn above line
+  const TOP_LINE_Y = 73; // where the red line is drawn（H比率で再調整）
+  const SPAWN_Y = 33;    // y position to preview/spawn above line
 
   // Physics params
   let GRAVITY = 2000;        // px/s^2
@@ -51,9 +51,9 @@
     { name: 'Apple',      radius: 40,  color: '#ff8f6b', score: 15 },
     { name: 'Pear',       radius: 45,  color: '#9be15d', score: 22 },
     { name: 'Peach',      radius: 50,  color: '#ffcad4', score: 32 },
-    { name: 'Pineapple',  radius: 60, color: '#ffe873', score: 46 },
-    { name: 'Melon',      radius: 70, color: '#a0f0b7', score: 64 },
-    { name: 'Watermelon', radius: 80, color: '#7bd389', score: 88 },
+    { name: 'Pineapple',  radius: 55, color: '#ffe873', score: 46 },
+    { name: 'Melon',      radius: 60, color: '#a0f0b7', score: 64 },
+    { name: 'Watermelon', radius: 70, color: '#7bd389', score: 88 },
   ];
 
   let START_MAX_LEVEL = 4; // base spawn cap (may be further limited dynamically)
@@ -340,8 +340,9 @@
     // preview next entity
     drawPreview();
 
-    // entities
-    for (const f of fruits){
+    // entities（大きいものを手前＝大きい順に後描画）
+    const ordered = fruits.slice().sort((a,b)=> a.vr - b.vr || a.y - b.y);
+    for (const f of ordered){
       drawEntity(f.x, f.y, f.vr, f.level, false);
     }
 
