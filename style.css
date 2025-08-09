@@ -4,6 +4,7 @@
   --primary:#ff77aa;
   --accent:#77c4ff;
   --text:#333;
+  --hud-h: 56px; /* 固定ヘッダー高さ */
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -11,25 +12,20 @@ body{
   margin:0; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, 'Segoe UI', Roboto, 'Noto Sans JP', sans-serif;
   color:var(--text);
   background: linear-gradient(180deg, var(--bg1), var(--bg2));
+  overflow:hidden; /* スクロールなしで全体を収める */
 }
-#app{
-  max-width: 480px; margin: 0 auto;
-  height: 100dvh; /* iOS Safariでも有効な動的vh */
-  display: grid; grid-template-rows: auto 1fr auto;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-}
+#app{ max-width: 480px; margin: 0 auto; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 .hud{
   display:flex; align-items:center; justify-content:space-between; gap:.5rem;
-  padding:.5rem .75rem; position:sticky; top:0; backdrop-filter:saturate(1.2) blur(6px);
+  height: var(--hud-h);
+  padding: .25rem .75rem; position:sticky; top:0; backdrop-filter:saturate(1.2) blur(6px);
 }
 .score,.highscore{ font-weight:700; }
 .nextbox{
   padding:.25rem .5rem; border:2px dashed var(--primary); border-radius:8px; color:var(--primary); font-weight:700;
 }
-.game-wrap{ position:relative; width:100%; height:100%; display:grid; place-items:center; overflow:hidden; }
-#game{
-  width:100%; height:auto; max-height:100%; aspect-ratio: 360 / 640;
-  display:block; background: #fff; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.08);
+.game-wrap{ position:relative; width:100%; height: calc(100vh - var(--hud-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); display:grid; place-items:center; }
+#game{ height:100%; width:auto; max-width:100%; display:block; background: #fff; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.08);
   touch-action: none;
 }
 .overlay{ position:absolute; inset:0; display:grid; place-items:center; background: rgba(0,0,0,.25); }
@@ -38,7 +34,7 @@ body{
 .panel h1{ margin:.25rem 0 .5rem; font-size:1.6rem; }
 .panel button{ appearance:none; border:none; background:var(--primary); color:#fff; font-weight:800; padding:.75rem 1.25rem; border-radius:12px; box-shadow:0 6px 0 #e05585; cursor:pointer; }
 .panel button:active{ transform:translateY(2px); box-shadow:0 4px 0 #e05585; }
-.tips{ text-align:center; opacity:.65; font-size:.9rem; padding:.5rem 0 1rem; }
+
 
 @media (min-width: 480px){
   #app{ padding-bottom: 1rem; }
