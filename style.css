@@ -24,8 +24,8 @@ body{
 .nextbox{
   padding:.25rem .5rem; border:2px dashed var(--primary); border-radius:8px; color:var(--primary); font-weight:700;
 }
-.game-wrap{ position:relative; width:100%; height: calc(100vh - var(--hud-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); display:grid; place-items:center; }
-#game{ height:100%; width:auto; max-width:100%; display:block; background: #fff; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.08);
+.game-wrap{ position:relative; width:100%; display:grid; place-items:center; }
+#game{ width:100%; height:auto; display:block; background: #fff; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.08);
   touch-action: none;
 }
 .overlay{ position:absolute; inset:0; display:grid; place-items:center; background: rgba(0,0,0,.25); }
